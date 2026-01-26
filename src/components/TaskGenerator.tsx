@@ -12,25 +12,33 @@ export const TaskGenerator = () => {
         setLoading(true);
         setError(null);
 
-        try {
-            const response = await fetch('api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: input })
-            })
+        await new Promise(res => setTimeout(res, 800));
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Something went wrong");
-            }
+        const finalTasks = ["Research ideas", "Create a budget", "Execute the plan"]
 
-            const data: AISuggestedTask = await response.json();
-            setResult(data);
-        } catch (error: unknown) {
-            setError(error instanceof Error ? error.message : "Something went wrong");
-        } finally {
-            setLoading(false);
+        setResult({
+            title: `Plan for: ${input}`,
+            priority: 'medium',
+            subtasks: [],
+            estimatedMinutes: 45
+        });
+
+        for (const task of finalTasks) {
+            await new Promise(res => setTimeout(res, 600));
+            setResult(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    subtasks: [...prev.subtasks, task]
+                };
+            });
         }
+
+        await new Promise(res => setTimeout(res, 500));
+        const finalPriority = input.toLowerCase().includes('clean') ? 'low' : 'high';
+        setResult(prev => prev ? { ...prev, priority: finalPriority } : prev);
+
+        setLoading(false);
     };
 
     return (
