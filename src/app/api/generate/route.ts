@@ -5,41 +5,48 @@ import { streamText } from 'ai';
 
 const FORBIDDEN_KEYWORDS = ['steal', 'hack', 'bomb', 'illegal'];
 
+let requestCount = 0;
+
+setInterval(() => {
+  requestCount = 0;
+}, 60000);
+
 export async function POST(request: Request) {
-    const { prompt } = await request.json();
+  if (requestCount >= 5) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+  }
 
-    const isDengerous = FORBIDDEN_KEYWORDS.some(word => prompt.toLowerCase().includes(word));
+  requestCount++;
 
-    if (isDengerous) {
-        return NextResponse.json({ error: 'Dengerous prompt detected' }, { status: 403 });
-    }
+  const { prompt } = await request.json();
+  const isDangerous = FORBIDDEN_KEYWORDS.some(word => prompt.toLowerCase().includes(word));
 
-    const systemInstructions = `
-    You are an expert Task Architect.
-    The user will provide a goal. Your job is to break it down into a structured plan.
+  if (isDangerous) {
+    return NextResponse.json({ error: 'Dangerous prompt detected' }, { status: 403 });
+  }
 
-    CRITICAL RULES:
-    1. Only output valid JSON.
-    2. Use this exact structure:
-       {
-         "title": "String",
-         "priority": "high" | "medium" | "low",
-         "subtasks": ["string", "string", "string"],
-         "estimatedMinutes": number
-       }
-    3. Do not include any conversational text like "Here is your plan."
-  `;
+  // const systemInstructions = `
+  //   You are an expert Task Architect.
+  //   The user will provide a goal. Your job is to break it down into a structured plan.
 
-    /*
-  const { text } = await generateText({
-    model: openai('gpt-4o-mini'),
-    system: systemInstructions,
-    prompt: prompt,
-  });
-  */
+  //   CRITICAL RULES:
+  //   1. Only output valid JSON.
+  //   2. Use this exact structure:
+  //      {
+  //        "title": "String",
+  //        "priority": "high" | "medium" | "low",
+  //        "subtasks": ["string", "string", "string"],
+  //        "estimatedMinutes": number
+  //      }
+  //   3. Do not include any conversational text like "Here is your plan."
+  // `;
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+// const { text } = await generateText({
+//   model: openai('gpt-4o-mini'),
+//   system: systemInstructions,
+//   prompt: prompt,
+  // });
 
-    console.log("System Prompt is ready!");
-    return new Response(JSON.stringify({ message: "System prompt configured!" }));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  return new Response(JSON.stringify({ message: "System prompt configured!" }));
 }
