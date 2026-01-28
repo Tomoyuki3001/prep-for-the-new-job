@@ -5,7 +5,7 @@ This repository is a dedicated preparation workspace for my upcoming role as a P
 ## Tech Stack
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
-- **AI Integration**: (Simulated) Vercel AI SDK patterns
+- **AI Integration**: Gemini API (free)
 - **Styling**: Tailwind CSS
 
 ## Key Learnings & Features
