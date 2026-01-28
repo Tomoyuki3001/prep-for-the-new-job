@@ -1,9 +1,41 @@
 import { NextResponse } from 'next/server';
-import { AISuggestedTask } from '@/types/type';
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { GoogleGenAI } from '@google/genai';
 
 const FORBIDDEN_KEYWORDS = ['steal', 'hack', 'bomb', 'illegal'];
+const ai = new GoogleGenAI({});
+
+const systemInstructions = `
+    You are an expert Task Architect.
+    The user will provide a goal. Your job is to break it down into a structured plan.
+
+    CRITICAL RULES:
+    1. Only output valid JSON.
+    2. Use this exact structure:
+       {
+         "title": "String",
+         "priority": "high" | "medium" | "low",
+         "subtasks": ["string", "string", "string"],
+         "estimatedMinutes": number
+       }
+    3. Do not include any conversational text like "Here is your plan."
+    4. For estimatedMinutes: Calculate a realistic time estimate based on:
+       - The complexity of each subtask
+       - The number of subtasks (typically 5-15 minutes per subtask for simple tasks, 15-30 for medium, 30-60+ for complex)
+       - The overall scope of the goal
+       - Do NOT default to 45 minutes. Provide a thoughtful estimate that varies based on the actual task complexity.
+  `;
+
+async function main(prompt: string) {
+  let responseText = '';
+  const response = await ai.models.generateContentStream({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+  });
+  for await (const chunk of response) {
+    responseText += chunk.text;
+  }
+  return responseText;
+}
 
 let requestCount = 0;
 
@@ -25,28 +57,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dangerous prompt detected' }, { status: 403 });
   }
 
-  // const systemInstructions = `
-  //   You are an expert Task Architect.
-  //   The user will provide a goal. Your job is to break it down into a structured plan.
-
-  //   CRITICAL RULES:
-  //   1. Only output valid JSON.
-  //   2. Use this exact structure:
-  //      {
-  //        "title": "String",
-  //        "priority": "high" | "medium" | "low",
-  //        "subtasks": ["string", "string", "string"],
-  //        "estimatedMinutes": number
-  //      }
-  //   3. Do not include any conversational text like "Here is your plan."
-  // `;
-
-// const { text } = await generateText({
-//   model: openai('gpt-4o-mini'),
-//   system: systemInstructions,
-//   prompt: prompt,
-  // });
-
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  return new Response(JSON.stringify({ message: "System prompt configured!" }));
+  const result = await main(systemInstructions + prompt);
+  return NextResponse.json({ message: result });
 }

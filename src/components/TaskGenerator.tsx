@@ -29,6 +29,13 @@ export const TaskGenerator = () => {
         setError(null);
 
         try {
+            if (input.trim() === '') {
+                setLoading(false);
+                setError('Please enter a valid prompt');
+                setTimeout(() => setError(null), 3000);
+                return;
+            }
+
             const response = await fetchWithTry('/api/generate', {
                 method: 'POST',
                 headers: {
@@ -43,29 +50,7 @@ export const TaskGenerator = () => {
                 return;
             }
 
-            setResult({
-                title: `Plan for: ${input}`,
-                priority: 'medium',
-                subtasks: [],
-                estimatedMinutes: 45
-            });
-
-            const finalTasks = ["Research ideas", "Create a budget", "Execute the plan"]
-
-            for (const task of finalTasks) {
-                await new Promise(res => setTimeout(res, 600));
-                setResult(prev => {
-                    if (!prev) return prev;
-                    return {
-                        ...prev,
-                        subtasks: [...prev.subtasks, task]
-                    };
-                });
-            }
-
-            await new Promise(res => setTimeout(res, 500));
-            const finalPriority = input.toLowerCase().includes('clean') ? 'low' : 'high';
-            setResult(prev => prev ? { ...prev, priority: finalPriority } : prev);
+            setResult(JSON.parse((await response.json()).message as string));
         } catch (error) {
             console.error('Error generating plan:', error);
         } finally {
@@ -79,6 +64,7 @@ export const TaskGenerator = () => {
         Title: ${result.title}
         Subtasks: ${result.subtasks.join(', ')}
         `;
+
         try {
             await navigator.clipboard.writeText(formattedResult);
             setCopied(true);
@@ -89,24 +75,27 @@ export const TaskGenerator = () => {
     }
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div className='flex flex-col items-center justify-center'>
+            <h1 className='text-2xl font-bold'>Task Generator</h1>
+            <p className='text-gray-500'>Hello! Please enter a goal and let the AI generate a plan for you.</p>
             <form onSubmit={handleGenerate}>
                 <input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="What do you want to do?"
-                    style={{ padding: '10px', width: '300px', border: '1px solid #ddd', borderRadius: '5px' }}
+                    className='mt-2 p-2 w-80 border border-gray-300 rounded-md'
                 />
                 <button
                 type="submit"
                 disabled={loading}
-                style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '5px', marginLeft: '10px' }}>
+                className='mt-2 p-2 w-32 ml-2 border border-gray-300 rounded-md bg-blue-500 text-white cursor-pointer'
+                >
                     {loading ? "AI is thinking..." : "Generate Plan"}
                 </button>
             </form>
 
             {result && (
-                <div style={{ marginTop: '20px', border: '1px solid #ddd', padding: '15px' }}>
+                <div className='mt-4 border border-gray-300 rounded-md p-4'>
                     <h3>{result.title}</h3>
                     <p>Priority: <strong>{result.priority}</strong></p>
                     <ul>
@@ -114,7 +103,7 @@ export const TaskGenerator = () => {
                     </ul>
                     <small>Estimated time: {result.estimatedMinutes} mins</small>
                     <button
-                    className='ml-2 bg-blue-500 text-white p-2 rounded-md'
+                    className='ml-2 bg-blue-500 text-white p-2 rounded-md cursor-pointer'
                     onClick={() => handleFormatResult(result)}
                     >
                         {copied ? "Copied!" : "Copy Plan"}
@@ -122,7 +111,7 @@ export const TaskGenerator = () => {
                 </div>
             )}
             {error && (
-                <div style={{ color: 'red', marginTop: '10px', fontWeight: 'bold' }}>
+                <div className='mt-2 text-red-500 font-bold'>
                     {error}
                 </div>
             )}
